@@ -1,0 +1,181 @@
+---
+title: "Exercise 1 - Human Capital"
+author: "Robert Auberbach, Ondrej Hanak, Annika Janson"
+output: pdf_document
+---
+
+```{r}
+#libraries used
+library(dplyr)
+```
+
+```{r}
+#we downloaded the PWT-dataset and transformed it into a .csv format (decimal points had to be adjusted since values smaller than one were displayed as zeros in excel which automatically converts to actual zero values in a csv...)
+#Next:load the data into RStudio
+data <- read.csv2("pwt1001.csv")
+```
+
+```{r}
+##PREPARING DATA - DEPENDENT VARIABLE
+#create a per capita measure 
+data$rgdpoPC <- data$rgdpo / data$pop
+
+#transforming the data into a wide format
+data_wide <- data %>% 
+  pivot_wider(id_cols = countrycode,
+              names_from = year,
+              values_from = rgdpoPC)
+
+#data for timespan 1965-1985
+data_wide_6585 <- data_wide %>%
+  select(countrycode, "1965":"1985")
+
+#filtering out countries with NAs
+data_wide_6585 <- data_wide_6585 %>%
+  filter(if_all(everything(), ~ !is.na(.)))
+
+#calculating the growth rates for 1965-1985
+  data_final <- data_wide_6585[,1]
+  data_final[,2] <- log(data_wide_6585[,2])-log(data_wide_6585[,22])
+  data_final[,3] <- log(data_wide_6585[,2])
+  colnames(data_final)[2] <- "Y65_85"
+  colnames(data_final)[3] <- "Y_65"
+  
+#data for timespan 1997-2017
+data_wide_9717 <- data_wide %>%
+  select(countrycode, "1997":"2017")
+
+#filtering out countries with NAs
+data_wide_9717 <- data_wide_9717 %>%
+  filter(if_all(everything(), ~ !is.na(.)))
+
+#calculating the growth rates for 1997-2017
+  data_final2 <- data_wide_9717[,1]
+  data_final2[,2] <- log(data_wide_9717[,2])-log(data_wide_9717[,22])
+  data_final2[,3] <- log(data_wide_9717[,2])
+  colnames(data_final2)[2] <- "Y97_17"
+  colnames(data_final2)[3] <- "Y_97"
+  
+```
+
+```{r}
+##PREPARING DATA - INDEPENDENT VARIABLES
+
+#Pop growth for timespan 1965-1985
+data_wide <- data %>% 
+  pivot_wider(id_cols = countrycode,
+              names_from = year,
+              values_from = pop)
+
+data_wide_6585 <- data_wide %>%
+  select(countrycode, "1965":"1985")
+
+#filtering out countries with NAs
+data_wide_6585 <- data_wide_6585 %>%
+  filter(if_all(everything(), ~ !is.na(.)))
+
+data_final[,4] <- log(data_wide_6585[,2])-log(data_wide_6585[,22])
+colnames(data_final)[4] <- "L65_85"
+
+#Pop growth for timespan 1997-2017
+
+data_wide_9717 <- data_wide %>%
+  select(countrycode, "1997":"2017")
+
+#filtering out countries with NAs
+data_wide_9717 <- data_wide_9717 %>%
+  filter(if_all(everything(), ~ !is.na(.)))
+
+data_final2[,4] <- log(data_wide_9717[,2])-log(data_wide_9717[,22])
+colnames(data_final2)[4] <- "L97_17"
+
+
+
+
+#Capital growth for timespan 1965-1985
+data_wide <- data %>% 
+  pivot_wider(id_cols = countrycode,
+              names_from = year,
+              values_from = csh_i)
+
+data_wide_6585 <- data_wide %>%
+  select(countrycode, "1965":"1985")
+
+#filtering out countries with NAs
+data_wide_6585 <- data_wide_6585 %>%
+  filter(if_all(everything(), ~ !is.na(.)))
+
+data_final[,5] <- log(data_wide_6585[,2])-log(data_wide_6585[,22])
+colnames(data_final)[5] <- "K65_85"
+
+#Capital growth for timespan 1997-2017
+
+data_wide_9717 <- data_wide %>%
+  select(countrycode, "1997":"2017")
+
+#filtering out countries with NAs
+data_wide_9717 <- data_wide_9717 %>%
+  filter(if_all(everything(), ~ !is.na(.)))
+
+data_final2[,5] <- log(data_wide_9717[,2])-log(data_wide_9717[,22])
+colnames(data_final2)[5] <- "K97_17"
+
+
+#Human Capital growth for timespan 1965-1985
+data_wide <- data %>% 
+  pivot_wider(id_cols = countrycode,
+              names_from = year,
+              values_from = hc)
+
+data_wide_6585 <- data_wide %>%
+  select(countrycode, "1965":"1985")
+
+#filtering out countries with NAs
+data_wide_6585 <- data_wide_6585 %>%
+  filter(if_all(everything(), ~ !is.na(.)))
+
+
+common_countries <- intersect(data_wide_6585$countrycode, data_final$countrycode)
+data_final <- data_final %>%
+  filter(countrycode %in% common_countries)
+data_final[,6] <- log(data_wide_6585[,2])-log(data_wide_6585[,22])
+colnames(data_final)[6] <- "H65_85"
+
+#Capital growth for timespan 1997-2017
+
+data_wide_9717 <- data_wide %>%
+  select(countrycode, "1997":"2017")
+
+#filtering out countries with NAs
+data_wide_9717 <- data_wide_9717 %>%
+  filter(if_all(everything(), ~ !is.na(.)))
+
+common_countries <- intersect(data_wide_9717$countrycode, data_final2$countrycode)
+data_final2 <- data_final2 %>%
+  filter(countrycode %in% common_countries)
+data_final2[,6] <- log(data_wide_9717[,2])-log(data_wide_9717[,22]) 
+colnames(data_final2)[6] <- "H97_17"
+```
+
+
+```{r}
+#Model 1
+
+model1 <- lm(Y65_85~K65_85+L65_85+H65_85, data_final)
+model2 <- lm(Y65_85~K65_85+L65_85+H65_85+Y_65, data_final)
+
+summary(model1)
+summary(model2)
+```
+
+
+
+
+
+
+
+
+
+
+
+
